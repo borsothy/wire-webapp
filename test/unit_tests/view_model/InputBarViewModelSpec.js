@@ -56,5 +56,22 @@ describe('z.viewModel.content.InputBarViewModel', () => {
       expect(mentionEntity.startIndex).toBe(3);
       expect(mentionEntity.length).toBe(38);
     });
+
+    it('matches mention in markdown list', () => {
+      const selectionStart = 11;
+      const selectionEnd = 11;
+      const inputValue = '- mention @n\n-mention @nqa2';
+      const userName = 'nqa1';
+
+      const mentionCandidate = viewModel.getMentionCandidate(selectionStart, selectionEnd, inputValue);
+      viewModel.editedMention(mentionCandidate);
+
+      const userEntity = new z.entity.User(z.util.createRandomUuid());
+      userEntity.name(userName);
+
+      const mentionEntity = viewModel._createMentionEntity(userEntity);
+      expect(mentionEntity.startIndex).toBe(10);
+      expect(mentionEntity.length).toBe(5);
+    });
   });
 });

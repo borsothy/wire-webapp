@@ -35,8 +35,8 @@ z.auth.AuthService = class AuthService {
     };
   }
 
-  constructor(client) {
-    this.client = client;
+  constructor(backendClient) {
+    this.backendClient = backendClient;
     this.logger = new z.util.Logger('z.auth.AuthService', z.config.LOGGER.OPTIONS);
   }
 
@@ -45,7 +45,7 @@ z.auth.AuthService = class AuthService {
    * @returns {Promise} Promise that resolves with an array of cookies.
    */
   getCookies() {
-    return this.client.sendRequest({
+    return this.backendClient.sendRequest({
       type: 'GET',
       url: AuthService.CONFIG.URL_COOKIES,
     });
@@ -70,15 +70,15 @@ z.auth.AuthService = class AuthService {
         },
       };
 
-      if (this.client.accessToken) {
+      if (this.backendClient.accessToken) {
         config.headers = {
-          Authorization: `Bearer ${window.decodeURIComponent(this.client.accessToken)}`,
+          Authorization: `Bearer ${window.decodeURIComponent(this.backendClient.accessToken)}`,
         };
       }
 
       config.success = accessTokenData => {
         const {access_token: accessToken, token_type: accessTokenType} = accessTokenData;
-        this.client.clearQueueUnblockTimeout();
+        this.backendClient.clearQueueUnblockTimeout();
         this.saveAccessTokenInClient(accessTokenType, accessToken);
         resolve(accessTokenData);
       };
@@ -108,14 +108,14 @@ z.auth.AuthService = class AuthService {
         const isConnectivityProblem = jqXHR.status === z.error.BackendClientError.STATUS_CODE.CONNECTIVITY_PROBLEM;
         if (isConnectivityProblem) {
           this.logger.warn('Delaying request for access token due to suspected connectivity issue');
-          this.client.clearQueueUnblockTimeout();
+          this.backendClient.clearQueueUnblockTimeout();
 
-          return this.client
+          return this.backendClient
             .executeOnConnectivity(z.service.BackendClient.CONNECTIVITY_CHECK_TRIGGER.ACCESS_TOKEN_REFRESH)
             .then(() => {
               this.logger.info('Continuing to request access token after verifying connectivity');
-              this.client.queueState(z.service.QUEUE_STATE.ACCESS_TOKEN_REFRESH);
-              this.client.scheduleQueueUnblock();
+              this.backendClient.queueState(z.service.QUEUE_STATE.ACCESS_TOKEN_REFRESH);
+              this.backendClient.scheduleQueueUnblock();
               return _retry();
             });
         }
@@ -139,7 +139,7 @@ z.auth.AuthService = class AuthService {
    * @returns {jQuery.jqXHR} A superset of the XMLHTTPRequest object.
    */
   postCookiesRemove(email, password, labels) {
-    return this.client.sendJson({
+    return this.backendClient.sendJson({
       data: {
         email: email,
         labels: labels,
@@ -196,7 +196,7 @@ z.auth.AuthService = class AuthService {
    * @returns {Promise} Promise that resolves on successful login code request
    */
   postLoginSend(requestCode) {
-    return this.client.sendJson({
+    return this.backendClient.sendJson({
       data: requestCode,
       type: 'POST',
       url: `${AuthService.CONFIG.URL_LOGIN}/send`,
@@ -209,7 +209,7 @@ z.auth.AuthService = class AuthService {
    * @returns {jQuery.jqXHR} A superset of the XMLHTTPRequest object.
    */
   postLogout() {
-    return this.client.sendRequest({
+    return this.backendClient.sendRequest({
       type: 'POST',
       url: `${AuthService.CONFIG.URL_ACCESS}/logout`,
       withCredentials: true,
@@ -224,7 +224,7 @@ z.auth.AuthService = class AuthService {
    * @returns {undefined}
    */
   saveAccessTokenInClient(type = '', value = '') {
-    this.client.accessTokenType = type;
-    this.client.accessToken = value;
+    this.backendClient.accessTokenType = type;
+    this.backendClient.accessToken = value;
   }
 };
